@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 广东移动 · 规划Agent · 深色主题（对齐 snapshot）── */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #0a0a0a;
+  color: #fff;
+  font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* 文本细分 */
+.text-caption {
+  font-size: 10px;
+  line-height: 14px;
+}
+.text-body-sm {
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* ── Leaflet 深色适配 ── */
+.leaflet-container {
+  background: #050505;
+  font-family: inherit;
+}
+.leaflet-bar a,
+.leaflet-control-zoom a {
+  background: #141414 !important;
+  color: #93c5fd !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.leaflet-bar a:hover {
+  background: #1f1f1f !important;
+}
+.leaflet-control-attribution {
+  background: rgba(10, 10, 10, 0.7) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #141414;
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.leaflet-popup-content {
+  margin: 10px 12px;
+  font-size: 12px;
+}
+/* 深色底图瓦片微调 */
+.cm-dark-tiles {
+  filter: brightness(0.9) saturate(1.05);
+}
+
+/* 栅格 canvas 叠加 */
+.grid-canvas-layer {
+  mix-blend-mode: screen;
+}
+
+/* TAZ / 优先级 标记 */
+.taz-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.5);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* 隐藏数字输入箭头 */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* range 滑块 */
+input[type='range'] {
+  accent-color: #3b82f6;
+}
+
+/* 动画 */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 2s infinite;
+}
+.think-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.think-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #60a5fa;
+  display: inline-block;
+  animation: think 1s infinite ease-in-out;
+}
+.think-dots i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.think-dots i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes think {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Recharts 深色微调 */
+.recharts-default-tooltip {
+  background: #141414 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+}
+.recharts-tooltip-label,
+.recharts-tooltip-item {
+  color: #e5e7eb !important;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: #94a3b8;
+  font-size: 10px;
+}
+.recharts-polar-angle-axis-tick-value {
+  fill: #94a3b8;
+  font-size: 10px;
+}
