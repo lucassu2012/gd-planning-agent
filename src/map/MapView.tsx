@@ -148,6 +148,12 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
       {/* 智能板栅格 / 详情RSRP Canvas */}
       <GridCanvasLayer grids={gridsToShow} gridSize={dataset.meta.gridSize} colorFor={gridColorFor} visible={showGrid} />
 
+      {/* 智能板栅格上叠加 TAZ 边界轮廓 */}
+      {mode === 'global' && layers.smartGrid && layers.tazOutline &&
+        dataset.tazList.map((t) => (
+          <Polygon key={'o' + t.id} positions={t.poly} pathOptions={{ color: '#22d3ee', weight: 0.8, opacity: 0.55, fill: false }} interactive={false} />
+        ))}
+
       {/* 规划覆盖模拟栅格：已选站点覆盖增强（选站越多绿色越多） */}
       {mode === 'planning' && planTaz && (
         <GridCanvasLayer grids={coverageCells} gridSize={50} colorFor={coverageColor} visible />
@@ -233,27 +239,26 @@ function PoorPopup({ taz, ticket }: { taz: Taz; ticket?: PoorTicket }) {
 }
 function ComplaintPopup({ c, taz }: { c: Complaint; taz?: Taz }) {
   const col = COMPLAINT_COLOR[c.type];
+  const net = c.source === '网络侧';
   return (
-    <div style={{ minWidth: 268, maxWidth: 320, color: '#e5e7eb', fontSize: 12 }}>
+    <div style={{ minWidth: 270, maxWidth: 326, color: '#e5e7eb', fontSize: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, borderBottom: '1px solid rgba(255,255,255,.12)', paddingBottom: 5 }}>
-        <span style={{ fontWeight: 700, fontSize: 13 }}>投诉单 {c.ticketId}</span>
+        <span style={{ fontWeight: 700, fontSize: 13 }}>离网用户工单 {c.ticketId}</span>
         <span style={{ color: col, background: hexToRgba(col, 0.18), padding: '1px 7px', borderRadius: 4, fontSize: 11 }}>{c.type}</span>
       </div>
-      <Row k="业务类型" v={c.bizType} />
-      <Row k="建单时间" v={c.time} />
-      <Row k="投诉地址" v={c.address} />
-      <Row k="来源" v={`${c.source} · ${c.status}`} />
-      <Row k="申告内容" v={c.content} />
+      <Row k="离网原因侧" v={`${c.source}${net ? '（可网络治理）' : '（市场侧维系）'}`} />
+      <Row k="在用套餐" v={c.bizType} />
+      <Row k="离网用户数" v={`${c.churnUsers} 户`} />
+      <Row k="常驻地址" v={c.address} />
+      <Row k="离网时间" v={c.time} />
+      <Row k="离网场景" v={c.content} />
+      <Row k="状态" v={c.status} />
       <div style={{ marginTop: 5, paddingTop: 5, borderTop: '1px dashed rgba(255,255,255,.1)' }}>
-        <div style={{ color: '#93c5fd', fontWeight: 600, fontSize: 11, marginBottom: 2 }}>无线侧修复结论</div>
-        <Row k="现场测试" v={c.testResult} />
-        <Row k="根因分析" v={c.rootCause} />
-        <Row k="调整建议" v={c.suggestion} />
-        {c.solveStation && <Row k="解决站点" v={c.solveStation} />}
-        <div style={{ marginTop: 3 }}>
-          <span style={{ color: '#94a3b8' }}>修复结论：</span>
-          <span style={{ color: col, fontWeight: 700 }}>{c.conclusion}</span>
-        </div>
+        <div style={{ color: '#93c5fd', fontWeight: 600, fontSize: 11, marginBottom: 2 }}>离网根因分析与挽留建议</div>
+        <Row k="常驻网络指标" v={c.testResult} />
+        <Row k="离网根因" v={c.rootCause} />
+        <Row k="挽留/治理建议" v={c.suggestion} />
+        {c.solveStation && <Row k="关联站点" v={c.solveStation} />}
       </div>
       <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>所属TAZ：{taz?.name ?? ''}（{taz?.poiCategory ?? ''}）</div>
     </div>

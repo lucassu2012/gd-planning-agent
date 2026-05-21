@@ -20,6 +20,8 @@ export default function App() {
   const error = useStore((s) => s.error);
   const view = useStore((s) => s.view);
   const init = useStore((s) => s.init);
+  const demoStory = useStore((s) => s.demoStory);
+  const clearDemo = useStore((s) => s.clearDemo);
 
   useEffect(() => {
     init();
@@ -43,6 +45,16 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
       <TopNav />
+      {demoStory && (
+        <div className="shrink-0 flex items-start gap-3 px-5 py-2 bg-blue-500/10 border-b border-blue-500/30">
+          <span className="text-[10px] mt-0.5 px-2 py-0.5 rounded bg-blue-500/25 text-blue-200 font-semibold whitespace-nowrap">演示故事线</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-bold text-blue-200">{demoStory.title} <span className="text-white/40 font-normal">· {demoStory.tab}</span></div>
+            <div className="text-[11px] text-white/65 leading-snug">{demoStory.text}</div>
+          </div>
+          <button onClick={clearDemo} className="shrink-0 text-white/40 hover:text-white text-sm leading-none mt-0.5">✕</button>
+        </div>
+      )}
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={view}>
           {view === 'global' && <GlobalInsight />}

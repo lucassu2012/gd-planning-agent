@@ -1,5 +1,5 @@
 import { useStore } from '../store';
-import { POI_CATEGORIES, POI_COLOR, GRID_CATALOG } from '../types';
+import { POI_CATEGORIES, POI_COLOR, GRID_CATALOG, COMPLAINT_COLOR, COMPLAINT_TYPES, CHURN_NETWORK_REASON } from '../types';
 import { LMH_LEGEND, RSRP_BANDS } from '../map/colorScales';
 
 export default function Legend({ mode }: { mode: 'global' | 'detail' | 'planning' }) {
@@ -20,6 +20,19 @@ export default function Legend({ mode }: { mode: 'global' | 'detail' | 'planning
   } else if (layers.poorMap) {
     title = '质差程度';
     body = LMH_LEGEND.map((b) => <Item key={b.label} c={b.color} l={b.label} />);
+  } else if (layers.complaints) {
+    title = '离网原因';
+    body = (
+      <div className="space-y-1">
+        {COMPLAINT_TYPES.map((t) => (
+          <div key={t} className="flex items-center gap-2 text-[10px] text-white/60">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: COMPLAINT_COLOR[t] }} />
+            {t}
+            <span className="ml-auto text-[8px]" style={{ color: CHURN_NETWORK_REASON[t] ? '#22c55e' : '#94a3b8' }}>{CHURN_NETWORK_REASON[t] ? '网络可治理' : '市场维系'}</span>
+          </div>
+        ))}
+      </div>
+    );
   } else if (mode === 'planning') {
     title = '规划覆盖增强 (RSRP)';
     body = [

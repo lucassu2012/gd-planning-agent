@@ -26,6 +26,12 @@ const META: { kind: Kind; num: number; title: string; desc: string; fmt: string;
   },
 ];
 
+const DEMOS: { id: 1 | 2 | 3; name: string; icon: string; color: string; desc: string }[] = [
+  { id: 1, name: '智能板六维感知包', icon: '▦', color: '#3b82f6', desc: '高校竞技手游干扰场景：智能板栅格 + 干扰指标 + TAZ 边界，演示"信号强但 SINR 低"的根因与干扰治理。' },
+  { id: 2, name: '离网经营数据包', icon: '⚑', color: '#ef4444', desc: '城中村离网聚集场景：离网用户地图 + 离网原因，区分网络可治理 / 市场维系，演示离网根因与挽留。' },
+  { id: 3, name: '时空张量数据包', icon: '◷', color: '#a78bfa', desc: '商圈/枢纽话务激增场景：事件/在建/楼盘叠加，演示话务脉冲、未来发展预测与建站规划联动。' },
+];
+
 export default function ImportData() {
   const setView = useStore((s) => s.setView);
   const center = useStore((s) => s.dataset!.meta.center);
@@ -33,6 +39,7 @@ export default function ImportData() {
   const importSmartBoard = useStore((s) => s.importSmartBoard);
   const importChurn = useStore((s) => s.importChurn);
   const importTensor = useStore((s) => s.importTensor);
+  const loadDemo = useStore((s) => s.loadDemo);
   const [st, setSt] = useState<Record<Kind, St>>({ smartboard: { status: 'idle', msg: '' }, churn: { status: 'idle', msg: '' }, tensor: { status: 'idle', msg: '' } });
 
   async function onFile(kind: Kind, file: File) {
@@ -75,6 +82,23 @@ export default function ImportData() {
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-[860px] mx-auto space-y-4">
+          {/* 演示数据包：一键载入不同故事线 */}
+          <div>
+            <div className="text-sm font-semibold mb-1">演示数据包 <span className="text-white/40 text-xs font-normal">一键载入，演示不同故事线</span></div>
+            <div className="grid grid-cols-3 gap-3">
+              {DEMOS.map((d) => (
+                <div key={d.id} className="rounded-xl border border-white/10 bg-[#0f0f0f] p-3.5 hover:border-blue-500/50 transition-colors flex flex-col">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: `${d.color}22`, color: d.color }}>{d.icon}</span>
+                    <span className="text-xs font-bold">{d.name}</span>
+                  </div>
+                  <div className="text-[10.5px] text-white/50 leading-relaxed flex-1 mb-2.5">{d.desc}</div>
+                  <button onClick={() => loadDemo(d.id)} className="text-xs px-3 py-1.5 rounded-md text-white font-medium" style={{ background: d.color }}>载入此演示 →</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="text-sm font-semibold pt-1">导入自有数据（CSV）</div>
           {META.map((m) => (
             <Card key={m.kind} m={m} loaded={flags[m.kind]} st={st[m.kind]} onFile={onFile} />
           ))}

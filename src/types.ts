@@ -23,7 +23,7 @@ export const TAZ_TYPES: TazType[] = [
 ];
 
 /** 典型质差 */
-export type TypicalIssue = '高投诉' | '高负荷' | '体验质差' | 'OTT覆盖落后' | '正常';
+export type TypicalIssue = '弱覆盖' | '高负荷' | '体验质差' | 'OTT覆盖落后' | '正常';
 /** 优先级 */
 export type Priority = '极高' | '高' | '中' | '低';
 export const PRIORITY_ORDER: Record<Priority, number> = { 极高: 4, 高: 3, 中: 2, 低: 1 };
@@ -220,31 +220,31 @@ export interface PlanRoi {
   paybackMonths: number;
 }
 
-/** 投诉类型（对齐附件3） */
+/** 离网原因（离网用户地图分类） */
 export type ComplaintType =
-  | '高负荷'
+  | '网络质差'
   | '弱覆盖'
-  | '室分故障'
-  | '外部干扰'
-  | '网络优化'
-  | '基站拆迁'
-  | '基站故障'
-  | '自行恢复'
-  | '实测正常'
+  | '高负荷拥塞'
+  | '资费偏高'
+  | '竞对策反'
+  | '服务不满'
+  | '合约到期'
   | '其他';
 export const COMPLAINT_COLOR: Record<ComplaintType, string> = {
-  高负荷: '#ef4444',
+  网络质差: '#ef4444',
   弱覆盖: '#f97316',
-  室分故障: '#eab308',
-  外部干扰: '#a78bfa',
-  网络优化: '#3b82f6',
-  基站拆迁: '#ec4899',
-  基站故障: '#f43f5e',
-  自行恢复: '#22d3ee',
-  实测正常: '#22c55e',
+  高负荷拥塞: '#eab308',
+  资费偏高: '#a78bfa',
+  竞对策反: '#ec4899',
+  服务不满: '#22d3ee',
+  合约到期: '#3b82f6',
   其他: '#94a3b8',
 };
 export const COMPLAINT_TYPES = Object.keys(COMPLAINT_COLOR) as ComplaintType[];
+/** 离网原因是否网络侧可治理 */
+export const CHURN_NETWORK_REASON: Record<ComplaintType, boolean> = {
+  网络质差: true, 弱覆盖: true, 高负荷拥塞: true, 资费偏高: false, 竞对策反: false, 服务不满: false, 合约到期: false, 其他: false,
+};
 
 /** 投诉点（含投诉单详情） */
 export interface Complaint {
@@ -263,8 +263,9 @@ export interface Complaint {
   rootCause: string; // 根因分析
   conclusion: string; // 无线侧修复结论(网络-高负荷等)
   suggestion: string; // 网络调整建议
-  solveStation: string; // 解决站点
-  status: string; // 状态(归档/处理中/已闭环)
+  solveStation: string; // 关联治理站点
+  status: string; // 状态(在网预警/挽留中/已离网)
+  churnUsers: number; // 该点离网/高危用户数
 }
 
 /** 质差工单（质差地图关联） */
@@ -391,7 +392,7 @@ export const GRID_CATALOG: GridCategory[] = [
 
 // 颜色 / 标签常量
 export const ISSUE_COLOR: Record<TypicalIssue, string> = {
-  高投诉: '#ef4444',
+  弱覆盖: '#ef4444',
   高负荷: '#f97316',
   体验质差: '#eab308',
   OTT覆盖落后: '#a142ff',

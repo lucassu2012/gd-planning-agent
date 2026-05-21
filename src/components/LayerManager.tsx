@@ -87,9 +87,10 @@ export default function LayerManager({ mode }: { mode: 'global' | 'detail' | 'pl
                       <div className="text-[9px] text-white/35 mb-0.5">具体指标</div>
                       <Mini items={cat.indicators.map((i) => ({ v: i.field, l: i.label }))} val={gridField} onSel={(v) => setGridField(v as GridField)} />
                     </div>
+                    <Row on={layers.tazOutline} label="显示 TAZ 边界" onClick={lk('tazOutline')} color="#22d3ee" />
                   </div>
                 )}
-                <Row on={layers.complaints} label="投诉地图" onClick={lk('complaints')} color="#ef4444" />
+                <Row on={layers.complaints} label="离网用户地图" onClick={lk('complaints')} color="#ef4444" />
               </Group>
               <Group title="社会">
                 <Row on={layers.social} label="事件/在建/楼盘" onClick={lk('social')} color="#a78bfa" />

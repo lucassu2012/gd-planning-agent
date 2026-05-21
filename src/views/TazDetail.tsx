@@ -13,7 +13,7 @@ export default function TazDetail() {
   const taz = useStore((s) => s.dataset!.tazList.find((t) => t.id === s.selectedTazId));
   const back = useStore((s) => s.back);
   const openPlanning = useStore((s) => s.openPlanning);
-  const [tab, setTab] = useState<'overview' | 'ai'>('overview');
+  const [tab, setTab] = useState<'overview' | 'compete' | 'ai'>('overview');
   if (!taz) return null;
 
   return (
@@ -34,9 +34,12 @@ export default function TazDetail() {
         <div className="w-[550px] shrink-0 border-r border-white/10 flex flex-col bg-[#0a0a0a]">
           <div className="flex border-b border-white/10 text-xs shrink-0">
             <Tab active={tab === 'overview'} onClick={() => setTab('overview')}>TAZ 环境概览</Tab>
+            <Tab active={tab === 'compete'} onClick={() => setTab('compete')}>竞对分析</Tab>
             <Tab active={tab === 'ai'} onClick={() => setTab('ai')}>AI 助手</Tab>
           </div>
-          {tab === 'overview' ? <Overview taz={taz} /> : <AiAssistant taz={taz} mode="score" />}
+          {tab === 'overview' && <Overview taz={taz} />}
+          {tab === 'compete' && <div className="flex-1 overflow-y-auto p-4"><Compete taz={taz} /></div>}
+          {tab === 'ai' && <AiAssistant taz={taz} mode="score" />}
         </div>
         <div className="flex-1 relative">
           <MapView mode="detail" />

@@ -184,10 +184,11 @@ for (let i = 0; i < blocks.length; i++) {
   const weightedScore = r2(ws);
   const valueLevel = weightedScore >= 4 ? '高价值区域' : weightedScore >= 3 ? '中价值区域' : '低价值区域';
 
+  // 典型质差：「正常」占比较高、其余类型大致均衡
   let issue = '正常';
-  if (complaint >= 8) issue = '高投诉';
-  else if (load >= 82) issue = '高负荷';
-  else if (poorRate >= 22) issue = '体验质差';
+  if (weak >= 13) issue = '弱覆盖';
+  else if (load >= 80) issue = '高负荷';
+  else if (poorRate >= 24) issue = '体验质差';
   else if (competitor >= 60) issue = 'OTT覆盖落后';
   const priority = weightedScore >= 4 ? (complaint >= 10 ? '极高' : '高') : weightedScore >= 3.2 ? '高' : weightedScore >= 2.4 ? '中' : '低';
   const activeIndex = dailyTrafficGB > 4000 ? '极高' : dailyTrafficGB > 1500 ? '高' : dailyTrafficGB > 400 ? '中' : '低';
@@ -308,43 +309,44 @@ for (const taz of tazList.filter((t) => t.priority === '极高' || t.priority ==
   roi.push({ tazId: taz.id, newUsers: Math.round(rf(800, 3200)), revenueWan: r1(rf(6, 28)), trafficGB: Math.round(rf(900, 3600)), paybackMonths: rint(10, 28) });
 }
 
-// ── 投诉点（分类型 + 完整投诉单，对齐 投诉数据.csv）──
+// ── 离网用户点（分离网原因 + 挽留/治理建议；样本精简）──
 const C_TEMPLATE = {
-  高负荷: { content: '高峰时段上网卡顿、视频加载慢，离开此地正常', cause: '投诉点主覆盖基站忙时同时上网人数多，基站高负荷影响网速', sug: '可通过载波聚合扩容/小区分裂、忙时负载均衡解决', conclusion: '网络-高负荷', rsrp: [-95, -88], sinr: [4, 9], rate: [2, 5] },
-  弱覆盖: { content: '室内信号差、经常无信号，重启无效', cause: '主服小区RSRP偏低、建筑穿透损耗大，存在覆盖空洞', sug: '建议新增室分/微站补盲，优化邻区与功率', conclusion: '网络-弱覆盖', rsrp: [-115, -106], sinr: [-2, 4], rate: [0.5, 3] },
-  室分故障: { content: '楼内特定楼层无信号，电梯里更明显', cause: '室分系统部分点位无输出/无源器件故障', sug: '派单核查室分链路，修复无源器件', conclusion: '网络-室分故障', rsrp: [-118, -108], sinr: [-3, 3], rate: [0.3, 2] },
-  外部干扰: { content: '通话有杂音、网速忽快忽慢', cause: '上行受外部干扰、RSSI抬升，SINR恶化', sug: '开展干扰排查与频率优化，协调干扰源', conclusion: '网络-外部干扰', rsrp: [-92, -82], sinr: [-3, 2], rate: [1, 4] },
-  网络优化: { content: '移动中切换掉话、边缘速率低', cause: '邻区/切换参数不合理导致乒乓切换', sug: '优化切换门限与邻区关系、调整下倾角', conclusion: '网络-网络优化', rsrp: [-105, -95], sinr: [0, 6], rate: [2, 6] },
-  基站拆迁: { content: '近期信号突然变差', cause: '周边基站因市政/物业拆迁退服', sug: '推进站址恢复或新增替代站点', conclusion: '网络-基站拆迁', rsrp: [-112, -100], sinr: [-1, 5], rate: [1, 4] },
-  基站故障: { content: '区域大面积无法上网', cause: '基站退服/传输中断告警', sug: '派单抢修、启用应急保障', conclusion: '网络-基站故障', rsrp: [-120, -105], sinr: [-4, 2], rate: [0, 1] },
-  自行恢复: { content: '之前信号差现已恢复', cause: '临时拥塞/遮挡，已自行恢复', sug: '持续观察，无需处理', conclusion: '网络-自行恢复', rsrp: [-100, -90], sinr: [3, 9], rate: [3, 8] },
-  实测正常: { content: '反映信号差但离开后正常，愿配合测试', cause: '现场实测各项指标正常，无线网络正常', sug: '安抚回访，关注终端/室内因素', conclusion: '用户原因-实测正常', rsrp: [-90, -78], sinr: [10, 18], rate: [12, 35] },
-  其他: { content: '其他网络相关诉求', cause: '需进一步定位', sug: '转专业线核查', conclusion: '其他', rsrp: [-100, -88], sinr: [3, 10], rate: [3, 10] },
+  网络质差: { content: '近期上网体验差、视频卡顿，多次反馈后转网意向强', cause: '常驻栅格速率/时延质差占比高，体验感知差导致离网', sug: '体验专项优化 + 高价值用户差异化保障与回访挽留', net: true, rsrp: [-100, -90], sinr: [-1, 5], rate: [2, 6] },
+  弱覆盖: { content: '室内/电梯信号差、经常无信号', cause: '常驻地弱覆盖、RSRP 偏低，覆盖空洞导致体验差', sug: '新增室分/微站补盲 + 覆盖治理后回访挽留', net: true, rsrp: [-116, -106], sinr: [-3, 3], rate: [0.5, 3] },
+  高负荷拥塞: { content: '高峰时段网速慢、抢不到资源', cause: '主覆盖小区忙时高负荷、PRB 利用率高', sug: '扩容/小区分裂 + 忙时负载均衡，缓解后挽留', net: true, rsrp: [-95, -86], sinr: [3, 9], rate: [2, 5] },
+  资费偏高: { content: '认为套餐资费偏高，转向低资费竞品', cause: '非网络侧：资费敏感，竞品低价策反', sug: '市场侧资费优惠/合约绑定，精准营销挽留', net: false, rsrp: [-92, -80], sinr: [6, 14], rate: [10, 40] },
+  竞对策反: { content: '被竞对营销策反（携号转网）', cause: '非网络侧：竞对地推/优惠策反', sug: '高价值用户专属权益 + 反策反外呼', net: false, rsrp: [-92, -80], sinr: [6, 14], rate: [10, 40] },
+  服务不满: { content: '对客服/装维服务体验不满', cause: '非网络侧：服务环节体验差', sug: '服务补救与满意度运营，VIP 通道挽留', net: false, rsrp: [-92, -82], sinr: [5, 12], rate: [8, 30] },
+  合约到期: { content: '合约到期未续约，自然流失', cause: '非网络侧：合约期满、粘性下降', sug: '到期前主动续约触达 + 融合套餐绑定', net: false, rsrp: [-92, -82], sinr: [5, 12], rate: [8, 30] },
+  其他: { content: '其他原因离网', cause: '需进一步画像定位', sug: '综合画像分析后制定挽留策略', net: false, rsrp: [-95, -85], sinr: [4, 10], rate: [5, 20] },
 };
-const C_TYPES = Object.keys(C_TEMPLATE);
-const C_BIZ = ['公众类:手机:5G上网业务', '公众类:手机:4G上网业务', '公众类:手机:VoLTE语音业务'];
+const C_PLAN = ['5G畅享套餐', '5G尊享套餐', '4G自由选套餐', '融合宽带套餐'];
 const complaints = [];
 let cseq = 0;
 for (const taz of tazList) {
-  const n = Math.min(taz.complaintCount, 14);
+  // 样本精简：按 TAZ 体验/价值产生少量离网点（0~5）
+  const churnPotential = (100 - taz.weightedScore * 6) / 100 + (taz.typicalIssue !== '正常' ? 0.2 : 0);
+  const n = clamp(Math.round(churnPotential * rf(2, 6)), taz.typicalIssue === '正常' ? 0 : 1, 5);
   for (let c = 0; c < n; c++) {
+    // 网络侧/非网络侧离网原因偏置
     let type; const rr = rnd();
-    if (taz._load > 80 && rr < 0.4) type = '高负荷';
-    else if (taz._weak > 15 && rr < 0.5) type = pick(['弱覆盖', '室分故障']);
-    else if (taz._interf > 12 && rr < 0.4) type = '外部干扰';
-    else type = pick(C_TYPES);
+    if (taz._weak > 15 && rr < 0.4) type = '弱覆盖';
+    else if (taz._load > 80 && rr < 0.4) type = '高负荷拥塞';
+    else if (taz._ratePoor > 18 && rr < 0.4) type = '网络质差';
+    else type = pick(['资费偏高', '竞对策反', '服务不满', '合约到期', '其他', '网络质差']);
     const tpl = C_TEMPLATE[type];
     const tRsrp = Math.round(rf(tpl.rsrp[0], tpl.rsrp[1])), tSinr = Math.round(rf(tpl.sinr[0], tpl.sinr[1])), tRate = r1(rf(tpl.rate[0], tpl.rate[1]));
-    const solved = type !== '实测正常' && type !== '自行恢复' && rnd() < 0.7;
+    const cu = rint(3, 28);
     complaints.push({
-      id: 'C' + cseq, lat: r5(taz.lat + gauss(0, 0.0016)), lng: r5(taz.lng + gauss(0, 0.0016)), type, tazId: taz.id,
-      ticketId: '2026' + String(20000 + cseq).padStart(8, '0'), bizType: pick(C_BIZ),
-      time: `2026-02-${String(rint(1, 28)).padStart(2, '0')} ${String(rint(8, 22)).padStart(2, '0')}:${String(rint(0, 59)).padStart(2, '0')}:${String(rint(0, 59)).padStart(2, '0')}`,
-      address: `广州市天河区${taz.name}${rint(1, 300)}号`, source: '申告', content: tpl.content,
-      testResult: `现场测试：5G SS-RSRP ${tRsrp}dBm，SS-SINR ${tSinr}dB，下载速率 ${tRate} Mbps`,
-      rootCause: tpl.cause, conclusion: tpl.conclusion, suggestion: tpl.sug,
-      solveStation: solved ? `站点 GZ${rint(100000, 999999)}-${taz.name.slice(0, 4)}-5G_${rint(1, 3)}（经度${r5(taz.lng + gauss(0, 0.001))}，纬度${r5(taz.lat + gauss(0, 0.001))}）` : '',
-      status: type === '实测正常' ? '已闭环' : pick(['归档', '处理中', '已闭环']),
+      id: 'C' + cseq, lat: r5(taz.lat + gauss(0, 0.0018)), lng: r5(taz.lng + gauss(0, 0.0018)), type, tazId: taz.id,
+      ticketId: 'CHN' + String(20000 + cseq).padStart(7, '0'), bizType: pick(C_PLAN),
+      time: `2026-02-${String(rint(1, 28)).padStart(2, '0')}`,
+      address: `广州市天河区${taz.name}${rint(1, 300)}号`, source: tpl.net ? '网络侧' : '非网络侧', content: tpl.content,
+      testResult: `常驻栅格：RSRP ${tRsrp}dBm，SINR ${tSinr}dB，下行速率 ${tRate} Mbps`,
+      rootCause: tpl.cause, conclusion: type, suggestion: tpl.sug,
+      solveStation: tpl.net ? `关联治理站点 GZ${rint(100000, 999999)}-${taz.name.slice(0, 4)}-5G_${rint(1, 3)}` : '',
+      status: pick(['在网预警', '挽留中', '已离网']),
+      churnUsers: cu,
     });
     cseq++;
   }
