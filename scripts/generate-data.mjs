@@ -198,10 +198,25 @@ for (let i = 0; i < blocks.length; i++) {
   const dominantPoor = POOR_LABELS[poorCand[0][0]] || '速率';
   const poorSeverity = poorRate >= 28 ? '高' : poorRate >= 14 ? '中' : '低';
 
-  // 三家竞对（覆盖RSRP/质量SINR/采样数 + 覆盖·质量·体验得分；OTT落后区移动覆盖偏弱）
+  // 三家竞对（覆盖RSRP/质量SINR/采样数/50m栅格数+RSRP分档 + 覆盖·质量·体验得分；OTT落后区移动覆盖偏弱）
+  // RSRP 分档（对齐 snapshot-10）：≤-115 / -115~-105 / -105~-95 / -95~-85 / -85~-75 / >-75
+  const RSRP_CENTERS = [-120, -110, -100, -90, -80, -70];
+  const rsrpDistOf = (mean, total) => {
+    const w = RSRP_CENTERS.map((c) => Math.exp(-((c - mean) ** 2) / (2 * 11 * 11)));
+    const sum = w.reduce((s, x) => s + x, 0) || 1;
+    const d = w.map((x) => Math.round((x / sum) * total));
+    return d;
+  };
   const mkOp = (rsrpBase, sinrBase, cntBase) => {
     const rsrp = r1(clamp(rsrpBase + gauss(0, 2), -118, -72)), sinr = r1(clamp(sinrBase + gauss(0, 1.5), -3, 22));
-    return { rsrp, sinr, samples: Math.max(3, Math.round(cntBase * rf(0.7, 1.3))), coverage: Math.round(clamp((rsrp + 120) / 48 * 100, 35, 99)), quality: Math.round(clamp((sinr + 5) / 27 * 100, 35, 99)), experience: Math.round(clamp((rsrp + 120) / 48 * 55 + (sinr + 5) / 27 * 45, 35, 99)) };
+    const gridCount = Math.max(20, Math.round(cntBase * rf(60, 110)));
+    return {
+      rsrp, sinr, samples: Math.max(3, Math.round(cntBase * rf(0.7, 1.3))),
+      gridCount, rsrpDist: rsrpDistOf(rsrp, gridCount),
+      coverage: Math.round(clamp((rsrp + 120) / 48 * 100, 35, 99)),
+      quality: Math.round(clamp((sinr + 5) / 27 * 100, 35, 99)),
+      experience: Math.round(clamp((rsrp + 120) / 48 * 55 + (sinr + 5) / 27 * 45, 35, 99)),
+    };
   };
   const cntBase = Math.round(clamp(population / 800 + dailyTrafficGB / 60, 6, 90));
   const cmccLag = competitor > 60; // OTT落后区移动偏弱

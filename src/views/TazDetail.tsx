@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, Tooltip, Legend as RLegend, ResponsiveContainer } from 'recharts';
 import { useStore } from '../store';
-import { METRICS, type Taz, type MetricKey, type PoorRow } from '../types';
+import { METRICS, RSRP_DIST_LABELS, type Taz, type MetricKey, type PoorRow } from '../types';
 import { computeWeighted, valueLevel, type Weights } from '../lib/scoring';
 import { diagnoseTaz } from '../lib/diagnose';
 import MapView from '../map/MapView';
@@ -233,8 +233,14 @@ function DeepDive({ taz }: { taz: Taz }) {
   );
 }
 
+const RSRP_DIST_COLORS = ['#7f1d1d', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
 function Compete({ taz }: { taz: Taz }) {
   const { cmcc, telecom, unicom } = taz.competitors;
+  const ops = [
+    { key: '中国移动', short: '移动', o: cmcc, col: '#3b82f6', self: true },
+    { key: '中国电信', short: '电信', o: telecom, col: '#22c55e', self: false },
+    { key: '中国联通', short: '联通', o: unicom, col: '#ef4444', self: false },
+  ];
   const data = [
     { dim: '覆盖', 移动: cmcc.coverage, 电信: telecom.coverage, 联通: unicom.coverage },
     { dim: '质量', 移动: cmcc.quality, 电信: telecom.quality, 联通: unicom.quality },
@@ -244,12 +250,37 @@ function Compete({ taz }: { taz: Taz }) {
   const bestComp = Math.max((telecom.coverage + telecom.quality + telecom.experience) / 3, (unicom.coverage + unicom.quality + unicom.experience) / 3);
   const lead = cmccAvg - bestComp;
   const weakDim = data.reduce((a, b) => (b['移动'] - Math.max(b['电信'], b['联通']) < a['移动'] - Math.max(a['电信'], a['联通']) ? b : a));
+  const bestOpName = telecom.coverage + telecom.quality + telecom.experience >= unicom.coverage + unicom.quality + unicom.experience ? '电信' : '联通';
+
   return (
     <div>
-      <div className="text-[10px] text-white/45 mb-1">三家运营商 覆盖/质量/体验 对比（0~100）</div>
-      <div className="h-[160px]">
+      <div className="text-[11px] font-semibold text-white/85">OTT 竞对分析</div>
+      <div className="text-[10px] text-white/40 mb-2">覆盖竞对和速率竞对的综合评估，帮助识别网络竞争力短板。</div>
+
+      {/* 三家运营商栅格统计卡（对齐 snapshot-10） */}
+      <div className="grid grid-cols-3 gap-2 mb-2.5">
+        {ops.map(({ key, o, col, self }) => (
+          <div key={key} className={`rounded-lg p-2 border ${self ? 'border-blue-500/60 bg-blue-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: col }} />
+              <span className="text-[11px] font-bold" style={{ color: self ? '#93c5fd' : '#e5e7eb' }}>{key}</span>
+            </div>
+            <div className="text-[8px] text-white/40 uppercase">50m Grid 总数</div>
+            <div className="text-sm font-mono font-bold text-white/85">{o.gridCount.toLocaleString()}</div>
+            <div className="flex justify-between mt-1 text-[9px]">
+              <div><div className="text-white/40">RSRP≤-115</div><div className="font-mono font-bold" style={{ color: o.rsrpDist[0] > 0 ? '#ff4444' : '#22c55e' }}>{o.rsrpDist[0]}</div></div>
+              <div className="text-right"><div className="text-white/40">均RSRP</div><div className="font-mono" style={{ color: o.rsrp <= -100 ? '#ef4444' : '#e5e7eb' }}>{o.rsrp}</div></div>
+            </div>
+            <div className="text-[9px] text-white/40 mt-0.5">均SINR <b className="text-white/70 font-mono">{o.sinr}</b></div>
+          </div>
+        ))}
+      </div>
+
+      {/* 覆盖/质量/体验对比 */}
+      <div className="text-[10px] text-white/45 mb-1">覆盖 / 质量 / 体验 对比（0~100）</div>
+      <div className="h-[140px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 6, right: 6, left: -24, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 4, right: 6, left: -24, bottom: 0 }}>
             <XAxis dataKey="dim" tick={{ fontSize: 10, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} width={28} domain={[0, 100]} />
             <Tooltip contentStyle={{ background: '#141414', border: '1px solid rgba(255,255,255,.12)', borderRadius: 6, fontSize: 11 }} />
@@ -260,34 +291,36 @@ function Compete({ taz }: { taz: Taz }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      {/* 三家原始指标对比（栅格级OTT竞对：RSRP/SINR/采样数） */}
-      <table className="w-full text-[10.5px] mt-2">
-        <thead>
-          <tr className="text-white/40 text-[9px] border-b border-white/10">
-            <th className="text-left py-1">运营商</th>
-            <th className="text-right py-1">RSRP(dBm)</th>
-            <th className="text-right py-1">SINR(dB)</th>
-            <th className="text-right py-1">采样数</th>
-          </tr>
-        </thead>
-        <tbody>
-          {([['移动', cmcc, '#3b82f6'], ['电信', telecom, '#22c55e'], ['联通', unicom, '#ef4444']] as const).map(([n, o, col]) => (
-            <tr key={n} className="border-b border-white/5">
-              <td className="py-1" style={{ color: col, fontWeight: 600 }}>{n}</td>
-              <td className="py-1 text-right tabular-nums" style={{ color: o.rsrp <= -100 ? '#ef4444' : '#e5e7eb' }}>{o.rsrp}</td>
-              <td className="py-1 text-right tabular-nums" style={{ color: o.sinr < 3 ? '#ef4444' : '#e5e7eb' }}>{o.sinr}</td>
-              <td className="py-1 text-right text-white/55 tabular-nums">{o.samples}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="mt-2 text-[11px] bg-white/5 rounded p-2 leading-relaxed">
+
+      {/* RSRP 分档分布（每家一条堆叠条） */}
+      <div className="text-[10px] text-white/45 mt-2 mb-1">RSRP 覆盖分档分布</div>
+      <div className="space-y-1.5">
+        {ops.map(({ short, o, col }) => (
+          <div key={short} className="flex items-center gap-2">
+            <span className="w-7 text-[10px]" style={{ color: col }}>{short}</span>
+            <div className="flex-1 flex h-3.5 rounded overflow-hidden bg-white/5">
+              {o.rsrpDist.map((c, i) => (
+                <div key={i} title={`${RSRP_DIST_LABELS[i]}: ${c}`} style={{ width: `${(c / o.gridCount) * 100}%`, background: RSRP_DIST_COLORS[i] }} />
+              ))}
+            </div>
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-0.5">
+          <span className="w-7" />
+          <div className="flex-1 flex justify-between text-[8px] text-white/35">
+            {RSRP_DIST_LABELS.map((l) => <span key={l}>{l}</span>)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2.5 text-[11px] bg-white/5 rounded p-2 leading-relaxed">
         <b className="text-blue-300">总结建议：</b>
-        移动综合 {cmccAvg.toFixed(0)} 分（RSRP {cmcc.rsrp}dBm / SINR {cmcc.sinr}dB），{lead >= 3 ? `领先竞对约 ${lead.toFixed(0)} 分，整体占优` : lead >= -3 ? '与竞对基本持平' : `落后竞对约 ${(-lead).toFixed(0)} 分`}。
-        其中「{weakDim.dim}」相对最弱（移动 {weakDim['移动']} vs 竞对最高 {Math.max(weakDim['电信'], weakDim['联通'])}）。
+        中国移动综合 {cmccAvg.toFixed(0)} 分（RSRP {cmcc.rsrp}dBm / SINR {cmcc.sinr}dB，弱覆盖栅格 {cmcc.rsrpDist[0]}），
+        {lead >= 3 ? `领先${bestOpName}约 ${lead.toFixed(0)} 分，整体占优` : lead >= -3 ? '与竞对基本持平' : `落后${bestOpName}约 ${(-lead).toFixed(0)} 分`}。
+        相对最弱维度为「{weakDim.dim}」（移动 {weakDim['移动']} vs 竞对最高 {Math.max(weakDim['电信'], weakDim['联通'])}）。
         {lead < -3 || cmcc.coverage < 60
-          ? `建议优先${weakDim.dim === '覆盖' ? '补盲补强覆盖、新增宏站/室分站点' : weakDim.dim === '质量' ? '开展干扰治理与参数优化' : '扩容与体验专项优化'}夺回竞争力；该区移动覆盖偏弱，建议纳入新建/补点计划。`
-          : `建议${weakDim.dim === '覆盖' ? '局部补盲优化' : weakDim.dim === '质量' ? '干扰治理与参数优化' : '体验专项优化'}巩固优势，暂无需新建。`}
+          ? ` 建议优先${weakDim.dim === '覆盖' ? '补盲补强覆盖、新增宏站/室分站点' : weakDim.dim === '质量' ? '干扰治理与参数优化' : '扩容与体验专项优化'}夺回竞争力；本区移动覆盖偏弱，建议纳入新建/补点计划。`
+          : ` 建议${weakDim.dim === '覆盖' ? '局部补盲优化' : weakDim.dim === '质量' ? '干扰治理与参数优化' : '体验专项优化'}巩固优势，暂无需新建。`}
       </div>
     </div>
   );

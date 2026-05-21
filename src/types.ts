@@ -161,10 +161,13 @@ export interface OperatorPerf {
   rsrp: number; // 平均 RSRP dBm
   sinr: number; // 平均 SINR dB
   samples: number; // 采样数 cnt
+  gridCount: number; // 50m 栅格总数
+  rsrpDist: number[]; // RSRP 分档计数 [≤-115,-115~-105,-105~-95,-95~-85,-85~-75,>-75]
   coverage: number; // 覆盖 0~100
   quality: number; // 质量 0~100
   experience: number; // 体验 0~100
 }
+export const RSRP_DIST_LABELS = ['≤-115', '-115~-105', '-105~-95', '-95~-85', '-85~-75', '>-75'];
 
 /** 智能板 50m 栅格（真实字段派生） */
 export interface SmartGrid {
