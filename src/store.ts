@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import type { Dataset, SmartGrid, ChurnGrid, SocialEvent, GridField } from './types';
 import { loadDefaultDataset } from './data/load';
 import { DEFAULT_WEIGHTS, type Weights } from './lib/scoring';
+import { DEFAULT_QOS, type QosTierDef } from './lib/qos';
+
+const cloneQos = (): QosTierDef[] => DEFAULT_QOS.map((d) => ({ ...d, tiers: [...d.tiers] as [number, number, number, number] }));
 
 export type View = 'global' | 'detail' | 'planning' | 'import';
 export type Basemap = 'dark' | 'light' | 'satellite';
@@ -59,6 +62,9 @@ interface AppState {
   demoStory: { title: string; text: string; tab: string } | null;
   loadDemo: (id: 1 | 2 | 3) => void;
   clearDemo: () => void;
+  qosThresholds: QosTierDef[]; // 质差判定参考门限（可编辑）
+  setQosTier: (bizIdx: number, tierIdx: number, value: number) => void;
+  resetQos: () => void;
   fly: (center: [number, number], zoom?: number) => void;
 
   importSmartBoard: (grids: SmartGrid[]) => void;
@@ -84,6 +90,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedSiteId: null,
   selectedSiteIds: [],
   demoStory: null,
+  qosThresholds: cloneQos(),
   flyTo: null,
   importedFlags: { smartboard: false, churn: false, tensor: false },
 
@@ -122,6 +129,11 @@ export const useStore = create<AppState>((set, get) => ({
   toggleSite: (id) => set((s) => ({ selectedSiteIds: s.selectedSiteIds.includes(id) ? s.selectedSiteIds.filter((x) => x !== id) : [...s.selectedSiteIds, id] })),
   setSites: (ids) => set({ selectedSiteIds: ids }),
   clearDemo: () => set({ demoStory: null }),
+  setQosTier: (bizIdx, tierIdx, value) => set((s) => {
+    const next = s.qosThresholds.map((d, i) => (i === bizIdx ? { ...d, tiers: d.tiers.map((t, j) => (j === tierIdx ? value : t)) as [number, number, number, number] } : d));
+    return { qosThresholds: next };
+  }),
+  resetQos: () => set({ qosThresholds: cloneQos() }),
   loadDemo: (id) => {
     const off = { tazRegions: false, district: false, smartGrid: false, poorMap: false, complaints: false, social: false, planSites: false, tazOutline: false };
     if (id === 1) {

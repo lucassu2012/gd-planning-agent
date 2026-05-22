@@ -300,6 +300,23 @@ for (let r = 0; r < rows; r++) {
   }
 }
 
+// 每个 TAZ 的典型业务分档体验指标（对齐技术文档「典型业务分档网络需求」表的管A栅格呈现指标）
+// 由该 TAZ 的弱覆盖/干扰/负荷/速率质差/时延质差等损伤信号驱动：越差→下行/上行承载吞吐越低、手游空口时延越高，
+// 从而在默认门限下产生覆盖「极致/优秀/良好/入门/质差」全档位的真实分布。
+for (const taz of tazList) {
+  const weak = taz._weak, interf = taz._interf, load = taz._load, rp = taz._ratePoor, lp = taz._lat;
+  const overLoad = Math.max(0, load - 65);
+  // 视频点播·承载级下行吞吐率(Mbps)：基线~27，受速率质差/弱覆盖/高负荷拉低
+  const vod = clamp(27 - rp * 0.5 - weak * 0.26 - overLoad * 0.12 + gauss(0, 1.5), 2, 42);
+  // 视频通话·承载级上行吞吐率(Mbps)：上行更受弱覆盖限制
+  const vcUl = clamp(6.8 - weak * 0.18 - rp * 0.08 - overLoad * 0.05 + gauss(0, 0.5), 0.3, 12);
+  // 视频会议·承载级上行吞吐率(Mbps)：基线更高
+  const confUl = clamp(10.2 - weak * 0.23 - rp * 0.1 - overLoad * 0.06 + gauss(0, 0.7), 0.4, 16);
+  // 手游·空口包时延(ms)：受时延质差/干扰/高负荷推高（值越小越好）
+  const game = clamp(18 + lp * 2.7 + interf * 1.05 + Math.max(0, load - 60) * 0.6 + gauss(0, 4), 8, 165);
+  taz.qos = { vodTput: r1(vod), vcUl: r1(vcUl), confUl: r1(confUl), gameLat: Math.round(game) };
+}
+
 // ── 建站候选 + ROI ──
 const planSites = [], roi = [];
 const SITE_SUFFIX = ['西侧新增站', '东侧扩容站', '南广场补盲站', '周边商圈补盲站', '北侧住宅区站', '核心区室分点', '地铁口杆站', '楼宇室分'];

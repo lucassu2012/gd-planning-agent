@@ -8,6 +8,7 @@ import {
 } from '../types';
 import GridCanvasLayer from './GridCanvasLayer';
 import { indicatorColor, hexToRgba, rsrpBandColor, SEVERITY_COLOR } from './colorScales';
+import { classifyTaz, TIER_NAMES, TIER_COLORS, type QosResult } from '../lib/qos';
 
 const BASEMAP_URL: Record<string, string> = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -87,7 +88,12 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
   const polyPoor = layers.poorMap;
 
   const planSites = mode === 'planning' && planTaz ? dataset.planSites.filter((s) => s.tazId === planTaz.id) : dataset.planSites;
-  const poorTazs = useMemo(() => dataset.tazList.filter((t) => t.poorSeverity !== '低'), [dataset.tazList]);
+
+  // 质差判定：按可编辑门限对 TAZ 实时分档（取代静态 poorSeverity）
+  const qosThresholds = useStore((s) => s.qosThresholds);
+  const qosByTaz = useMemo(() => new Map(dataset.tazList.map((t) => [t.id, classifyTaz(t.qos, qosThresholds)])), [dataset.tazList, qosThresholds]);
+  const qosSev = (t: Taz) => qosByTaz.get(t.id)?.severity ?? t.poorSeverity;
+  const poorTazs = useMemo(() => dataset.tazList.filter((t) => qosByTaz.get(t.id)?.isPoor), [dataset.tazList, qosByTaz]);
 
   // 规划覆盖模拟网格：按已选站点路损建模上色，选站越多绿色覆盖格越多（req: 截图2效果）
   const selSites = useMemo(() => planSites.filter((s) => selectedSiteIds.includes(s.id)), [planSites, selectedSiteIds]);
@@ -128,7 +134,7 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
       {/* TAZ 不规则地块染色（req1 类型 / req4 质差） */}
       {showPolygons &&
         dataset.tazList.map((t) => {
-          const fill = polyPoor ? SEVERITY_COLOR[t.poorSeverity] : POI_COLOR[t.poiCategory];
+          const fill = polyPoor ? SEVERITY_COLOR[qosSev(t)] : POI_COLOR[t.poiCategory];
           return (
             <Polygon
               key={(polyPoor ? 'q' : 'p') + t.id}
@@ -137,7 +143,7 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
               eventHandlers={{ click: () => { if (!polyPoor) openTaz(t.id); } }}
             >
               {polyPoor ? (
-                <Popup><PoorPopup taz={t} ticket={ticketByTaz.get(t.id)} /></Popup>
+                <Popup><PoorPopup taz={t} ticket={ticketByTaz.get(t.id)} qos={qosByTaz.get(t.id)} /></Popup>
               ) : (
                 <Tooltip><b>{t.name}</b><br />{t.poiCategory} · {t.type}<br />优先级 {t.priority} · 得分 {t.weightedScore} · 流量 {t.dailyTrafficGB}GB</Tooltip>
               )}
@@ -173,8 +179,8 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
       {/* 质差地图：地块主质差标注 */}
       {mode === 'global' && layers.poorMap &&
         poorTazs.map((t) => (
-          <Marker key={'l' + t.id} position={[t.lat, t.lng]} icon={poorLabelIcon(t.dominantPoor, t.poorSeverity)}>
-            <Popup><PoorPopup taz={t} ticket={ticketByTaz.get(t.id)} /></Popup>
+          <Marker key={'l' + t.id} position={[t.lat, t.lng]} icon={poorLabelIcon(qosByTaz.get(t.id)?.worstBiz ?? t.dominantPoor, qosByTaz.get(t.id)?.severity ?? t.poorSeverity)}>
+            <Popup><PoorPopup taz={t} ticket={ticketByTaz.get(t.id)} qos={qosByTaz.get(t.id)} /></Popup>
           </Marker>
         ))}
 
@@ -220,20 +226,41 @@ export default function MapView({ mode }: { mode: 'global' | 'detail' | 'plannin
   );
 }
 
-function PoorPopup({ taz, ticket }: { taz: Taz; ticket?: PoorTicket }) {
+function PoorPopup({ taz, ticket, qos }: { taz: Taz; ticket?: PoorTicket; qos?: QosResult }) {
+  const sev = qos?.severity ?? taz.poorSeverity;
+  const worstBiz = qos?.worstBiz ?? taz.dominantPoor;
   return (
-    <div className="text-xs" style={{ minWidth: 220 }}>
-      <div className="font-bold text-sm mb-1">{taz.name}</div>
-      <div className="mb-1"><span className="px-1.5 py-0.5 rounded text-[10px]" style={{ color: SEVERITY_COLOR[taz.poorSeverity], background: hexToRgba(SEVERITY_COLOR[taz.poorSeverity], 0.15) }}>质差程度 {taz.poorSeverity}</span> <span className="text-white/60">主质差：{taz.dominantPoor}</span></div>
+    <div style={{ minWidth: 250, maxWidth: 300, color: '#e5e7eb', fontSize: 12 }}>
+      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{taz.name}</div>
+      <div style={{ marginBottom: 6 }}>
+        <span style={{ color: SEVERITY_COLOR[sev], background: hexToRgba(SEVERITY_COLOR[sev], 0.15), padding: '1px 7px', borderRadius: 4, fontSize: 11 }}>质差程度 {sev}</span>
+        <span style={{ color: '#94a3b8', marginLeft: 6 }}>主短板：{worstBiz}</span>
+      </div>
+      {qos && (
+        <div style={{ marginTop: 4, paddingTop: 5, borderTop: '1px dashed rgba(255,255,255,.12)' }}>
+          <div style={{ color: '#93c5fd', fontWeight: 600, fontSize: 11, marginBottom: 3 }}>典型业务分档判定（按当前参考门限）</div>
+          {qos.perBiz.map((b) => (
+            <div key={b.biz} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', lineHeight: 1.7 }}>
+              <span style={{ color: '#cbd5e1' }}>{b.biz}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{b.val}{b.unit}</span>
+                <span style={{ color: TIER_COLORS[b.tier], background: hexToRgba(TIER_COLORS[b.tier], 0.16), padding: '0 6px', borderRadius: 3, fontSize: 11, minWidth: 34, textAlign: 'center' }}>{b.tierName}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       {ticket ? (
-        <div className="space-y-1 mt-1.5">
+        <div style={{ marginTop: 5, paddingTop: 5, borderTop: '1px dashed rgba(255,255,255,.1)' }}>
           <Row k="质差原因" v={ticket.cause} />
           <Row k="优化建议" v={ticket.optimize} />
           <Row k="新建建议" v={ticket.build} />
           <Row k="影响用户" v={`${ticket.affectedUsers} 人`} />
-          <div className="text-[10px] text-white/40 mt-1">关联质差工单：{ticket.id}</div>
+          <div style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>关联质差工单：{ticket.id}</div>
         </div>
-      ) : <div className="text-[11px] text-white/50 mt-1">该地块质差程度低，暂无质差工单。</div>}
+      ) : qos?.isPoor ? (
+        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5, paddingTop: 5, borderTop: '1px dashed rgba(255,255,255,.1)' }}>该TAZ存在体验短板（{worstBiz}未达「良好」），建议结合栅格做覆盖/容量优化，暂无质差工单明细。</div>
+      ) : <div style={{ fontSize: 11, color: '#64748b', marginTop: 5 }}>各业务体验达「良好」及以上，暂未判定为质差。</div>}
     </div>
   );
 }

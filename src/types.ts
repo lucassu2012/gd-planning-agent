@@ -120,6 +120,15 @@ export interface Taz {
   dominantPoor: string; // 主质差类型（质差地图标注）
   poorSeverity: '低' | '中' | '高'; // 质差程度（质差地图染色）
   competitors: { cmcc: OperatorPerf; telecom: OperatorPerf; unicom: OperatorPerf }; // 三家竞对
+  qos: TazQos; // 典型业务体验指标（用于按门限分档判定质差）
+}
+
+/** TAZ 典型业务体验指标（管A栅格呈现指标，用于分档判定） */
+export interface TazQos {
+  vodTput: number; // 视频点播 承载级下行吞吐率 Mbps
+  vcUl: number; // 视频通话 承载级上行吞吐率 Mbps
+  confUl: number; // 视频会议 承载级上行吞吐率 Mbps
+  gameLat: number; // 手游 空口包时延 ms
 }
 
 /** POI 类别（TAZ 类型图例，对齐附件1） */

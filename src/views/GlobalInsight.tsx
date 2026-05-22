@@ -5,8 +5,11 @@ import { ISSUE_COLOR, PRIORITY_COLOR, PRIORITY_ORDER, type Taz, type TypicalIssu
 import MapView from '../map/MapView';
 import LayerManager from '../components/LayerManager';
 import Legend from '../components/Legend';
+import QosEditor from '../components/QosEditor';
 
 export default function GlobalInsight() {
+  const poorMap = useStore((s) => s.layers.poorMap);
+  const [qosOpen, setQosOpen] = useState(false);
   return (
     <div className="flex flex-col h-full bg-[#0a0a0a] overflow-hidden">
       <Dashboard />
@@ -16,6 +19,15 @@ export default function GlobalInsight() {
           <MapView mode="global" />
           <LayerManager mode="global" />
           <Legend mode="global" />
+          {poorMap && (
+            <button
+              onClick={() => setQosOpen(true)}
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161616]/95 border border-amber-500/40 text-xs font-medium text-amber-300 hover:bg-amber-500/15 shadow-lg backdrop-blur"
+            >
+              <span className="text-sm leading-none">⚙</span> 编辑质差判定门限
+            </button>
+          )}
+          {qosOpen && <QosEditor onClose={() => setQosOpen(false)} />}
         </div>
       </div>
     </div>
