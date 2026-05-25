@@ -60,7 +60,7 @@ interface AppState {
   toggleSite: (id: string) => void;
   setSites: (ids: string[]) => void;
   demoStory: { title: string; text: string; tab: string } | null;
-  loadDemo: (id: 1 | 2 | 3) => void;
+  loadDemo: (id: 1 | 2 | 3 | 4) => void;
   clearDemo: () => void;
   qosThresholds: QosTierDef[]; // 质差判定参考门限（可编辑）
   setQosTier: (bizIdx: number, tierIdx: number, value: number) => void;
@@ -140,8 +140,10 @@ export const useStore = create<AppState>((set, get) => ({
       set({ view: 'global', layers: { ...off, smartGrid: true, tazOutline: true }, gridBusiness: '短视频', gridCategory: '干扰', gridField: 'highInterfRatio', demoStory: { tab: '全局洞察 · 智能板栅格地图', title: '演示① 智能板六维感知 · 高校竞技手游干扰场景', text: '已载入智能板六维感知数据包，地图切换至「干扰·高干扰比例」指标并叠加 TAZ 边界。可见高校片区"信号强但 SINR 低"的同频干扰栅格成片（红/橙）——夜间竞技手游对时延极敏感，建议下倾角/功率/PCI 邻区优化降干扰。切换「业务场景/地图类别/具体指标」可查看覆盖/话务/体验各维度。' } });
     } else if (id === 2) {
       set({ view: 'global', layers: { ...off, complaints: true, tazRegions: true }, demoStory: { tab: '全局洞察 · 离网用户地图', title: '演示② 离网用户经营 · 网络侧可治理离网场景', text: '已载入离网数据包，地图叠加「离网用户地图」。按离网原因着色（网络质差/弱覆盖/高负荷=网络可治理，资费/竞对/合约=市场维系）。点击离网点查看离网工单（原因/根因/挽留建议/关联治理站点）。网络侧离网应纳入覆盖/容量治理优先挽留。' } });
-    } else {
+    } else if (id === 3) {
       set({ view: 'global', layers: { ...off, social: true, tazRegions: true }, demoStory: { tab: '全局洞察 · 事件/在建/楼盘', title: '演示③ 时空张量 · 事件话务激增与未来发展', text: '已载入时空张量数据包，地图叠加「事件/在建/楼盘」。演唱会/节庆带来话务脉冲、新建写字楼/楼盘带来话务增长、施工改变传播环境。点击事件查看影响，并据此在「建站规划→网络仿真优化/综合价值测算」做容量储备与收益测算。' } });
+    } else {
+      set({ view: 'global', layers: { ...off, smartGrid: true, tazOutline: true, poorMap: true }, gridBusiness: 'AI推理(Agent)', gridCategory: '体验', gridField: 'highLatRatio', demoStory: { tab: '全局洞察 · Token经营体验保障（智能板·高时延占比）', title: '演示④ Token经营 · AI算力套餐用户体验保障与建网', text: 'Token（AI推理/Agent）套餐用户聚集于写字楼、软件园、高校与创意园等"算力重度区"——流量上行密集（提示词/多模态上传）、对首Token时延与流式抖动极敏感，上行重传会直接放大Token冗余消耗。地图已切到智能板「体验·高时延占比」并叠加TAZ边界+质差地图：可见这些区域因上行受限/同频干扰/高负荷导致高时延栅格成片（红/橙），点击质差TAZ可见「Token推理」业务已跌入入门/质差档。治理闭环：①智能板栅格定位高时延/上行弱覆盖→②上行增强(SUL/上行载波聚合)+下倾角·功率·PCI邻区优化+负荷均衡→③仍不达标则进入「建站规划」按5G-A上行增强微站/室分输出建网建议，锁定首Token时延与上行吞吐SLA。可在「编辑质差判定门限」中调整Token首Token时延门限做敏感性分析。' } });
     }
   },
   fly: (center, zoom) => set({ flyTo: { center, zoom, token: ++flyTok } }),

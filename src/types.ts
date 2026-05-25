@@ -121,6 +121,7 @@ export interface Taz {
   poorSeverity: '低' | '中' | '高'; // 质差程度（质差地图染色）
   competitors: { cmcc: OperatorPerf; telecom: OperatorPerf; unicom: OperatorPerf }; // 三家竞对
   qos: TazQos; // 典型业务体验指标（用于按门限分档判定质差）
+  tokenUsers: number; // Token(AI算力)套餐用户数——AI推理/Agent重度用户聚集度
 }
 
 /** TAZ 典型业务体验指标（管A栅格呈现指标，用于分档判定） */
@@ -129,6 +130,7 @@ export interface TazQos {
   vcUl: number; // 视频通话 承载级上行吞吐率 Mbps
   confUl: number; // 视频会议 承载级上行吞吐率 Mbps
   gameLat: number; // 手游 空口包时延 ms
+  tokenTtft: number; // Token推理(AI/Agent) 首Token时延 ms（上行密集+时延敏感，越小越好）
 }
 
 /** POI 类别（TAZ 类型图例，对齐附件1） */
@@ -359,7 +361,7 @@ export interface GridCategory {
   indicators: GridIndicator[];
 }
 /** 业务场景（体验类指标随场景切换标签） */
-export const GRID_BUSINESS = ['短视频', '视频通话', '在线游戏', '网页浏览'] as const;
+export const GRID_BUSINESS = ['短视频', '视频通话', '在线游戏', '网页浏览', 'AI推理(Agent)'] as const;
 export const GRID_CATALOG: GridCategory[] = [
   {
     category: '覆盖',

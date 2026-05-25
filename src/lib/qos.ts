@@ -16,6 +16,7 @@ export const DEFAULT_QOS: QosTierDef[] = [
   { biz: '视频通话', flow: '上下行', metric: '承载级上行吞吐率', unit: 'Mbps', dir: 'high', tiers: [5, 3, 1.5, 1], field: 'vcUl' },
   { biz: '视频会议', flow: '上下行', metric: '承载级上行吞吐率', unit: 'Mbps', dir: 'high', tiers: [8, 5, 3, 1], field: 'confUl' },
   { biz: '手游', flow: '上下行', metric: '空口包时延', unit: 'ms', dir: 'low', tiers: [20, 40, 70, 100], field: 'gameLat' },
+  { biz: 'Token推理(Agent)', flow: '上行密集', metric: '首Token时延(TTFT)', unit: 'ms', dir: 'low', tiers: [450, 750, 1000, 1150], field: 'tokenTtft' },
 ];
 
 export const TIER_NAMES = ['极致', '优秀', '良好', '入门', '质差'];

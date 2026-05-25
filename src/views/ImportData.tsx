@@ -26,10 +26,11 @@ const META: { kind: Kind; num: number; title: string; desc: string; fmt: string;
   },
 ];
 
-const DEMOS: { id: 1 | 2 | 3; name: string; icon: string; color: string; desc: string }[] = [
+const DEMOS: { id: 1 | 2 | 3 | 4; name: string; icon: string; color: string; desc: string }[] = [
   { id: 1, name: '智能板六维感知包', icon: '▦', color: '#3b82f6', desc: '高校竞技手游干扰场景：智能板栅格 + 干扰指标 + TAZ 边界，演示"信号强但 SINR 低"的根因与干扰治理。' },
   { id: 2, name: '离网经营数据包', icon: '⚑', color: '#ef4444', desc: '城中村离网聚集场景：离网用户地图 + 离网原因，区分网络可治理 / 市场维系，演示离网根因与挽留。' },
   { id: 3, name: '时空张量数据包', icon: '◷', color: '#a78bfa', desc: '商圈/枢纽话务激增场景：事件/在建/楼盘叠加，演示话务脉冲、未来发展预测与建站规划联动。' },
+  { id: 4, name: 'Token经营数据包', icon: '◈', color: '#14b8a6', desc: 'AI算力套餐(Token)体验保障场景：智能板「高时延占比」+ 质差地图，定位写字楼/软件园/高校等Token重度区的上行/时延短板，演示监控→优化→5G-A上行增强建站闭环。' },
 ];
 
 export default function ImportData() {
@@ -85,7 +86,7 @@ export default function ImportData() {
           {/* 演示数据包：一键载入不同故事线 */}
           <div>
             <div className="text-sm font-semibold mb-1">演示数据包 <span className="text-white/40 text-xs font-normal">一键载入，演示不同故事线</span></div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {DEMOS.map((d) => (
                 <div key={d.id} className="rounded-xl border border-white/10 bg-[#0f0f0f] p-3.5 hover:border-blue-500/50 transition-colors flex flex-col">
                   <div className="flex items-center gap-2 mb-1.5">

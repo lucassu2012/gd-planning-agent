@@ -227,6 +227,11 @@ for (let i = 0; i < blocks.length; i++) {
 
   const code = (codeSeq++).toString(16).padStart(6, '0') + rint(0x1000, 0xffff).toString(16);
   const name = uniqName(type, typeCounter[type] - 1);
+  // Token(AI算力)套餐用户聚集度：写字楼/高校/创意园等"算力重度区"显著更高
+  // 注：用确定性抖动(基于序号 i)而非 rnd()，避免占用共享随机流、影响其余指标分布
+  const TOKEN_W = { 办公区: 1, 教育机构区: 0.92, 政府机构区: 0.5, 文化体育区: 0.46, 生活服务区: 0.42, 交通枢纽区: 0.4, 居住区: 0.32, 医疗机构区: 0.3 };
+  const tjit = 0.78 + ((((i + 1) * 2654435761) >>> 0) % 1000) / 1000 * 0.5; // [0.78,1.28)
+  const tokenUsers = clamp(Math.round((population * 0.022 + dailyTrafficGB * 0.22) * (TOKEN_W[type] ?? 0.35) * tjit), 8, 6000);
   const taz = {
     id: 'T' + String(i).padStart(3, '0'), code, name, type, district: '天河区', contractor: '移动',
     lat: r5(lat), lng: r5(lng), poly: blocks[i].map(toLatLng),
@@ -234,6 +239,7 @@ for (let i = 0; i < blocks.length; i++) {
     metrics, weightedScore, valueLevel, buildings: [], poorRows: [], bizPoorRows: [],
     gridCount: 0, complaintCount: Math.round(complaint * rf(0.8, 2.5)),
     poiCategory: poiOf(type, name), dominantPoor, poorSeverity, competitors: { cmcc, telecom, unicom },
+    tokenUsers,
     _zone: z, _weak: weak, _interf: interf, _load: load, _ratePoor: ratePoor, _lat: latencyPoor,
   };
   taz.description = describe(taz);
@@ -314,7 +320,15 @@ for (const taz of tazList) {
   const confUl = clamp(10.2 - weak * 0.23 - rp * 0.1 - overLoad * 0.06 + gauss(0, 0.7), 0.4, 16);
   // 手游·空口包时延(ms)：受时延质差/干扰/高负荷推高（值越小越好）
   const game = clamp(18 + lp * 2.7 + interf * 1.05 + Math.max(0, load - 60) * 0.6 + gauss(0, 4), 8, 165);
-  taz.qos = { vodTput: r1(vod), vcUl: r1(vcUl), confUl: r1(confUl), gameLat: Math.round(game) };
+  // Token推理(Agent)·首Token时延 TTFT(ms)：上行密集(提示词/多模态上传)+时延敏感——
+  // 受弱覆盖(上行受限延迟首包)/时延质差/同频干扰/高负荷共同推高（值越小越好）
+  // 用确定性抖动(基于 TAZ 序号)而非 gauss()，不占用共享随机流，保持其余业务分档分布稳定
+  const tidx = parseInt(taz.id.slice(1), 10) || 0;
+  const tjit2 = ((((tidx + 7) * 40503) >>> 0) % 181) - 90; // [-90,90]
+  // 凸曲线：健康/普通区平缓(稳居优秀，不抬高均值)，重度损伤区陡升(逼近质差)
+  const tbase = lp * 44 + weak * 20 + interf * 13 + overLoad * 10; // 损伤合成强度
+  const ttft = clamp(300 + tbase * (0.58 + tbase / 2700) + tjit2, 200, 2500);
+  taz.qos = { vodTput: r1(vod), vcUl: r1(vcUl), confUl: r1(confUl), gameLat: Math.round(game), tokenTtft: Math.round(ttft) };
 }
 
 // ── 建站候选 + ROI ──
